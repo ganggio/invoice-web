@@ -1,0 +1,7 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - heading "invoice-web" [level=1] [ref=e3]
+    - paragraph [ref=e4]: Notion에 작성한 견적서를 웹 링크와 PDF로 공유하는 서비스입니다.
+    - paragraph [ref=e5]: 랜딩 페이지는 곧 제공됩니다.
+  - region "Notifications alt+T"
+  - alert [ref=e6]

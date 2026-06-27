@@ -217,6 +217,705 @@
       "implementationGuide": "1) src/lib/notion/client.ts 작성: 최상단 `import 'server-only'` → `import { Client } from '@notionhq/client'` → `import { env } from '@/lib/env'` → globalThis 캐싱 패턴(`globalForNotion as unknown as { notionClient?: Client }`)으로 HMR 다중 인스턴스 방지 → `export const notionClient = globalForNotion.notionClient ?? new Client({ auth: env.NOTION_TOKEN })` → 개발 환경(`process.env.NODE_ENV !== 'production'`)에서만 globalThis에 캐싱. 한국어 JSDoc으로 `/** Notion API 호출용 싱글톤 Client 인스턴스. 서버 전용 모듈이며 env.NOTION_TOKEN으로 초기화된다. HMR 환경에서 인스턴스 중복 생성을 방지한다. */` 작성. 2) src/app/dev/notion-check/route.ts 작성: `import 'server-only'` → `import pino from 'pino'` → 모듈 상단에 PRODUCTION='production' 상수 + `const logger = pino({ level: 'debug' })` 임시 인스턴스 → GET 핸들러에서 `if (process.env.NODE_ENV === PRODUCTION) notFound()` 가드 → `await notionClient.databases.retrieve({ database_id: env.NOTION_QUOTE_DB_ID })` → `logger.info({ databaseId: db.id }, 'notion databases.retrieve 응답')` → `Response.json({ ok: true, id: db.id })`. 3) 검증: .env.local에 실제 NOTION_TOKEN/NOTION_QUOTE_DB_ID를 임시 설정(또는 사용자에게 임시 값 요청)한 상태에서 `npm run dev` 기동 → `browser_navigate('http://localhost:3000/dev/notion-check')` → 응답 JSON이 200으로 노출되고 dev 서버 콘솔에 pino 로그가 기록되는지 `browser_console_messages` 및 터미널 로그로 확인. 4) `npm run build` 후 .next/server 등 산출물에서 `grep -r 'NOTION_TOKEN' .next/static` → 0건 확인(서버 전용 가드 검증). 5) `npm run check-all` 무경고 통과. 6) ROADMAP Task 003 체크박스 갱신 및 진행 현황 2/3 → 3/3 갱신. Phase 1 완료 기준 4개 체크박스도 갱신. 7) 디버그 라우트는 Phase 2 Task 005(logger.ts 정식화) 시 정식 logger import로 교체 + 헬스체크로 승격 또는 제거 — 본 Task에서는 유지.",
       "verificationCriteria": "(1) src/lib/notion/client.ts 최상단에 `import 'server-only'`가 있고 `Client`가 env.NOTION_TOKEN으로 초기화되어 export된다. (2) HMR globalThis 캐싱 패턴이 적용되어 dev에서 인스턴스 중복 생성이 방지된다. (3) 한국어 JSDoc이 notionClient에 부착되어 있다. (4) src/app/dev/notion-check/route.ts가 production에서 notFound()로 차단되고 dev에서만 databases.retrieve를 1회 호출한다. (5) `npm run dev` + browser_navigate('/dev/notion-check') 결과로 200 JSON 응답이 반환되고 pino 로그가 dev 콘솔 또는 browser_console_messages에 기록된다. (6) `npm run build` 후 .next/static에 NOTION_TOKEN 문자열이 0건이다(grep 검증). (7) `npm run check-all`이 무경고 통과한다. (8) ROADMAP.md의 Task 003이 [x]로 갱신되고 진행 현황이 3/3이며 Phase 1 완료 기준 4개 체크박스가 모두 [x]이다.",
       "analysisResult": "invoice-web Phase 1(프로젝트 초기 설정)의 목표는 Next.js 15.5.3 + React 19 + Tailwind v4 + shadcn/ui new-york 스타터를 invoice-web 요구사항에 맞춰 정리하고, Notion 견적서 도메인의 토대(의존성·환경변수 검증·라우트 골격·Notion 클라이언트 싱글톤)를 만드는 것이다. 모든 Task는 ROADMAP Task 001~003과 1:1 대응하며 4-카테고리 Playwright MCP 테스트 면제 대상(설정·골격·인프라 모듈)이라 ROADMAP에 명시된 '최소 시각 검증'만 수행한다. 핵심 규칙(shrimp-rules.md): (1) 서버 전용 모듈은 import 'server-only' 선언, (2) console.* 금지·pino만 사용, (3) any 금지·매직 넘버 상수화, (4) /q/[slug]는 placeholder 단계에서도 noindex,nofollow 정책 유지, (5) ROADMAP에 없는 작업 즉흥 추가 금지, (6) 환경변수 변경 시 src/lib/env.ts + .env.example + README.md 동기화 의무, (7) 파일명 kebab-case·컴포넌트 PascalCase·한국어 JSDoc. 각 Task 완료 시 npm run check-all + npm run build 통과 + ROADMAP 체크박스/진행 현황 표 갱신 후 다음 Task로 진행한다."
+    },
+    {
+      "id": "43c8bd83-c703-4ec7-9670-715891accb03",
+      "name": "Task 004: 도메인 타입 정의",
+      "description": "src/lib/notion/types.ts에 Quote, QuoteLineItem, Currency 타입과 도메인 기본값 상수(DEFAULT_TAX_RATE=10, DEFAULT_CURRENCY='KRW', KRW_DECIMALS=0, USD_DECIMALS=2)를 정의한다. PDF·웹·Adapter·Service가 동일 import로 사용하는 Single Source of Truth.",
+      "notes": "ROADMAP Task 004. 비고: 순수 타입 정의 Task로 4-카테고리 시나리오 면제(최소 시각 검증만).",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "a07cab03-b4bf-4fff-b16a-ecc79f91cb46"
+        }
+      ],
+      "createdAt": "2026-06-27T13:44:54.749Z",
+      "updatedAt": "2026-06-27T13:44:54.749Z",
+      "relatedFiles": [
+        {
+          "path": "src/lib/notion/types.ts",
+          "type": "CREATE",
+          "description": "Quote/QuoteLineItem/Currency 타입 및 기본값 상수"
+        },
+        {
+          "path": "docs/PRD.md",
+          "type": "REFERENCE",
+          "description": "데이터 모델 섹션(라인 154~222)"
+        }
+      ],
+      "implementationGuide": "1) export type Currency = 'KRW' | 'USD'\n2) export interface QuoteLineItem { id; name; description?; quantity; unitPrice; amount }\n3) export interface Quote { id; slug; quoteNumber; issuer:{name,contact?}; client:{name,email?}; issuedAt; validUntil; items: QuoteLineItem[]; taxRate; currency: Currency; memo?; subtotal; tax; total }\n4) 모든 필드에 한국어 JSDoc.\n5) 상수는 동일 파일 또는 src/lib/constants.ts로 분리. 매직 넘버 금지.\n6) 같은 타입을 다른 파일에서 재정의 금지.",
+      "verificationCriteria": "tsc --noEmit 통과 + 임시 페이지에서 타입 import 후 browser_navigate+browser_snapshot 1회. any 타입 0건. JSDoc 한국어. 매직 넘버 0건.",
+      "analysisResult": "invoice-web MVP는 Notion DB → /q/[slug] 웹 뷰 + 서버 PDF 다운로드를 제공하는 솔로 개발자용 서비스다. ROADMAP.md(5-Phase, 24-Task)의 단계별 순서·의존성·Playwright MCP 테스트 의무를 엄수한다. 본 등록은 Phase 1(Task 001 완료, Task 002·003 등록 완료) 이후 Phase 2~5의 21개 Task를 4-batch(append 모드)로 추가하며, dependencies는 ROADMAP \"의존성: Task XXX\" 줄과 기존 등록 Task name을 그대로 사용한다. 도메인 타입(Quote/QuoteLineItem)은 src/lib/notion/types.ts 단일 소스, 합계 서버 재계산, Pretendard 폰트 임베드, ISR 300초+메모리 캐시 10분, noindex/nofollow(/q/[slug]) 정책을 모든 Task가 공유한다."
+    },
+    {
+      "id": "b03c8e68-2112-4fb0-8a81-43bb72d7c77a",
+      "name": "Task 005: pino 로거 및 통화 포맷 유틸",
+      "description": "src/lib/logger.ts(서버 전용 pino 인스턴스, 개발 환경 pino-pretty)와 src/lib/format.ts(formatCurrency: KRW→₩1,234,567 / USD→$1,234.56)를 구현한다. formatCurrency는 웹과 PDF에서 동일하게 재사용되는 isomorphic 함수.",
+      "notes": "ROADMAP Task 005. 비고: 인프라 유틸 Task로 4-카테고리 시나리오 면제(최소 시각 검증만).",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "43c8bd83-c703-4ec7-9670-715891accb03"
+        }
+      ],
+      "createdAt": "2026-06-27T13:44:54.749Z",
+      "updatedAt": "2026-06-27T13:44:54.749Z",
+      "relatedFiles": [
+        {
+          "path": "src/lib/logger.ts",
+          "type": "CREATE",
+          "description": "pino 인스턴스 (server-only)"
+        },
+        {
+          "path": "src/lib/format.ts",
+          "type": "CREATE",
+          "description": "formatCurrency(amount, currency)"
+        },
+        {
+          "path": "src/lib/notion/types.ts",
+          "type": "DEPENDENCY",
+          "description": "Currency, *_DECIMALS 상수"
+        }
+      ],
+      "implementationGuide": "1) src/lib/logger.ts: import 'server-only'; pino({ level: NODE_ENV==='production'?'info':'debug', transport: dev면 pino-pretty })\n2) src/lib/format.ts: Intl.NumberFormat 또는 수동 포맷. 자릿수 상수(KRW_DECIMALS=0, USD_DECIMALS=2)는 Task 004에서 정의된 값 import\n3) console.* 호출 0건 정책 강제(eslint 규칙 추가 권장)",
+      "verificationCriteria": "단위 테스트로 KRW/USD 통화별 포맷 검증. grep으로 console.* 0건 확인. logger는 클라이언트 컴포넌트에서 import 불가(server-only 위반 시 빌드 실패) 확인. 임시 디버그 페이지에서 KRW/USD 포맷 결과를 browser_snapshot으로 1회 확인.",
+      "analysisResult": "invoice-web MVP는 Notion DB → /q/[slug] 웹 뷰 + 서버 PDF 다운로드를 제공하는 솔로 개발자용 서비스다. ROADMAP.md(5-Phase, 24-Task)의 단계별 순서·의존성·Playwright MCP 테스트 의무를 엄수한다. 본 등록은 Phase 1(Task 001 완료, Task 002·003 등록 완료) 이후 Phase 2~5의 21개 Task를 4-batch(append 모드)로 추가하며, dependencies는 ROADMAP \"의존성: Task XXX\" 줄과 기존 등록 Task name을 그대로 사용한다. 도메인 타입(Quote/QuoteLineItem)은 src/lib/notion/types.ts 단일 소스, 합계 서버 재계산, Pretendard 폰트 임베드, ISR 300초+메모리 캐시 10분, noindex/nofollow(/q/[slug]) 정책을 모든 Task가 공유한다."
+    },
+    {
+      "id": "6a220b14-e11a-43c4-b285-986e852ffc2e",
+      "name": "Task 006: Notion Adapter 구현",
+      "description": "src/lib/notion/adapter.ts에 notionPageToQuote(page, items): Quote 변환 함수와 src/lib/notion/errors.ts에 QuoteFieldMissingError·NotionApiError 클래스를 정의한다. 합계는 서버에서 재계산하며 Notion Formula 값을 신뢰하지 않는다.",
+      "notes": "ROADMAP Task 006. Playwright MCP 4-카테고리 필수.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "43c8bd83-c703-4ec7-9670-715891accb03"
+        },
+        {
+          "taskId": "b03c8e68-2112-4fb0-8a81-43bb72d7c77a"
+        }
+      ],
+      "createdAt": "2026-06-27T13:44:54.749Z",
+      "updatedAt": "2026-06-27T13:44:54.749Z",
+      "relatedFiles": [
+        {
+          "path": "src/lib/notion/adapter.ts",
+          "type": "CREATE",
+          "description": "Notion PageObjectResponse → Quote 변환"
+        },
+        {
+          "path": "src/lib/notion/errors.ts",
+          "type": "CREATE",
+          "description": "QuoteFieldMissingError, NotionApiError"
+        },
+        {
+          "path": "src/lib/notion/adapter.test.ts",
+          "type": "CREATE",
+          "description": "fixture 단위 테스트"
+        }
+      ],
+      "implementationGuide": "1) errors.ts: class QuoteFieldMissingError extends Error { missingFields: string[] }, class NotionApiError extends Error { cause?: unknown; status?: number }\n2) adapter.ts: import 'server-only'. notionPageToQuote(page, items):\n   - 필수 필드 누락 시 missingFields 배열에 누락 키 push → throw QuoteFieldMissingError\n   - subtotal = Σ(qty×unitPrice), tax = subtotal*taxRate/100, total = subtotal+tax\n   - taxRate 미설정 → DEFAULT_TAX_RATE, currency 미설정 → DEFAULT_CURRENCY\n3) fixture 3종(정상/누락/오타) 단위 테스트",
+      "verificationCriteria": "Playwright MCP 4-카테고리: (정상) /dev/adapter-check 페이지 browser_snapshot으로 total 정확 표시. (실패) quoteNumber 누락 fixture에서 QuoteFieldMissingError 메시지 노출 + browser_console_messages 에러 로깅. (엣지) 항목 0/100건, taxRate=0, unitPrice=0 fixture 경계값 검증. (회귀) Notion Formula total이 잘못된 fixture에서도 화면 total은 서버 재계산 값과 일치.",
+      "analysisResult": "invoice-web MVP는 Notion DB → /q/[slug] 웹 뷰 + 서버 PDF 다운로드를 제공하는 솔로 개발자용 서비스다. ROADMAP.md(5-Phase, 24-Task)의 단계별 순서·의존성·Playwright MCP 테스트 의무를 엄수한다. 본 등록은 Phase 1(Task 001 완료, Task 002·003 등록 완료) 이후 Phase 2~5의 21개 Task를 4-batch(append 모드)로 추가하며, dependencies는 ROADMAP \"의존성: Task XXX\" 줄과 기존 등록 Task name을 그대로 사용한다. 도메인 타입(Quote/QuoteLineItem)은 src/lib/notion/types.ts 단일 소스, 합계 서버 재계산, Pretendard 폰트 임베드, ISR 300초+메모리 캐시 10분, noindex/nofollow(/q/[slug]) 정책을 모든 Task가 공유한다."
+    },
+    {
+      "id": "56925a1b-66b3-46bf-b47e-73bb9bf4fd74",
+      "name": "Task 007: Quote Service 구현",
+      "description": "src/lib/notion/quote.service.ts에 getQuoteBySlug(slug): Promise<Quote|null> 함수를 구현한다. 1회 지수 백오프 재시도(500ms) 후 실패 시 NotionApiError, 견적서 부재 시 null 반환. pino로 구조화 로깅.",
+      "notes": "ROADMAP Task 007. Playwright MCP 4-카테고리 필수.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "94393e50-cdab-48e1-a359-91d115be456c"
+        },
+        {
+          "taskId": "6a220b14-e11a-43c4-b285-986e852ffc2e"
+        }
+      ],
+      "createdAt": "2026-06-27T13:44:54.749Z",
+      "updatedAt": "2026-06-27T13:44:54.749Z",
+      "relatedFiles": [
+        {
+          "path": "src/lib/notion/quote.service.ts",
+          "type": "CREATE",
+          "description": "getQuoteBySlug 서비스"
+        },
+        {
+          "path": "src/lib/notion/client.ts",
+          "type": "DEPENDENCY",
+          "description": "Notion 싱글톤"
+        },
+        {
+          "path": "src/lib/notion/adapter.ts",
+          "type": "DEPENDENCY",
+          "description": "notionPageToQuote"
+        },
+        {
+          "path": "src/lib/notion/errors.ts",
+          "type": "DEPENDENCY",
+          "description": "NotionApiError"
+        }
+      ],
+      "implementationGuide": "1) import 'server-only', notion(client.ts singleton), notionPageToQuote(adapter.ts) import\n2) databases.query({ database_id: NOTION_QUOTE_DB_ID, filter: slug == input })\n3) 결과 0건 → return null\n4) 1건 + Relation 항목 펼침(databases.query NOTION_ITEM_DB_ID 또는 pages.retrieve) → notionPageToQuote(page, items) → Quote 반환\n5) 호출 실패 시 1회 500ms 지수 백오프 후 NotionApiError로 wrap. 무한 재시도 금지.\n6) logger.info({ slug, latencyMs }) / logger.error({ slug, errorCode, cause })",
+      "verificationCriteria": "Playwright MCP 4-카테고리: (정상) 유효 slug 접속 시 Notion API 1회 호출(browser_network_requests). (실패) 잘못된 NOTION_TOKEN으로 error.tsx 렌더 + 재시도 1회 로깅. (엣지) 존재하지 않는 slug → not-found.tsx. (회귀) 네트워크 지연에서도 재시도 1회로 제한.",
+      "analysisResult": "invoice-web MVP는 Notion DB → /q/[slug] 웹 뷰 + 서버 PDF 다운로드를 제공하는 솔로 개발자용 서비스다. ROADMAP.md(5-Phase, 24-Task)의 단계별 순서·의존성·Playwright MCP 테스트 의무를 엄수한다. 본 등록은 Phase 1(Task 001 완료, Task 002·003 등록 완료) 이후 Phase 2~5의 21개 Task를 4-batch(append 모드)로 추가하며, dependencies는 ROADMAP \"의존성: Task XXX\" 줄과 기존 등록 Task name을 그대로 사용한다. 도메인 타입(Quote/QuoteLineItem)은 src/lib/notion/types.ts 단일 소스, 합계 서버 재계산, Pretendard 폰트 임베드, ISR 300초+메모리 캐시 10분, noindex/nofollow(/q/[slug]) 정책을 모든 Task가 공유한다."
+    },
+    {
+      "id": "893a1b4a-8a68-4fd1-8c0e-db136ee499e0",
+      "name": "Task 008: ISR 및 메모리 캐시 적용",
+      "description": "/q/[slug]/page.tsx에 export const revalidate = ISR_REVALIDATE_SECONDS(=300) 적용 + src/lib/notion/cache.ts에 인메모리 LRU(MAX_CACHE_TTL_MS = 10*60*1000, 최대 100건, 키 'quote:${slug}')를 구현한다. 실패 응답은 캐시 저장 금지.",
+      "notes": "ROADMAP Task 008. Playwright MCP 4-카테고리 필수. 상수: ISR_REVALIDATE_SECONDS=300, MAX_CACHE_TTL_MS=10*60*1000.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "56925a1b-66b3-46bf-b47e-73bb9bf4fd74"
+        }
+      ],
+      "createdAt": "2026-06-27T13:44:54.749Z",
+      "updatedAt": "2026-06-27T13:44:54.749Z",
+      "relatedFiles": [
+        {
+          "path": "src/lib/notion/cache.ts",
+          "type": "CREATE",
+          "description": "인메모리 LRU 캐시(server-only)"
+        },
+        {
+          "path": "src/app/q/[slug]/page.tsx",
+          "type": "TO_MODIFY",
+          "description": "revalidate 상수 추가"
+        },
+        {
+          "path": "src/lib/notion/quote.service.ts",
+          "type": "TO_MODIFY",
+          "description": "cache 통합"
+        }
+      ],
+      "implementationGuide": "1) src/lib/notion/cache.ts: import 'server-only'. 간단한 Map+LRU(usehooks-ts 미사용). get/set/has/delete + TTL 검사\n2) quote.service.ts에서 cache.get 우선 → miss 시 Notion 호출 → 성공 시 cache.set\n3) 실패 시 cache.set 호출 금지(다음 요청에서 재시도)\n4) /q/[slug]/page.tsx: export const revalidate = ISR_REVALIDATE_SECONDS",
+      "verificationCriteria": "Playwright MCP 4-카테고리: (정상) 동일 slug 2회 접속 시 두 번째는 Notion 호출 0건. (실패) Notion 실패 시 캐시에 미저장(재시도 발생). (엣지) TTL 만료 직후 재호출 1회. (회귀) LRU 100건 초과 시 가장 오래된 항목 제거.",
+      "analysisResult": "invoice-web MVP는 Notion DB → /q/[slug] 웹 뷰 + 서버 PDF 다운로드를 제공하는 솔로 개발자용 서비스다. ROADMAP.md(5-Phase, 24-Task)의 단계별 순서·의존성·Playwright MCP 테스트 의무를 엄수한다. 본 등록은 Phase 1(Task 001 완료, Task 002·003 등록 완료) 이후 Phase 2~5의 21개 Task를 4-batch(append 모드)로 추가하며, dependencies는 ROADMAP \"의존성: Task XXX\" 줄과 기존 등록 Task name을 그대로 사용한다. 도메인 타입(Quote/QuoteLineItem)은 src/lib/notion/types.ts 단일 소스, 합계 서버 재계산, Pretendard 폰트 임베드, ISR 300초+메모리 캐시 10분, noindex/nofollow(/q/[slug]) 정책을 모든 Task가 공유한다."
+    },
+    {
+      "id": "1389c4b8-ffb0-4c45-a118-4c6a5a9a3e5d",
+      "name": "Task 009: 공통 견적서 UI 컴포넌트",
+      "description": "src/components/quote/ 에 QuoteHeader, QuoteClientCard, QuoteItemsTable, QuoteTotals, QuoteMemo, QuoteInlineWarning 6종을 구현한다. 모두 props: { quote: Quote } 형태. 모바일(<768px)에서 항목 테이블은 카드 리스트로 자동 전환.",
+      "notes": "ROADMAP Task 009. Playwright MCP 4-카테고리 필수. cn() 헬퍼 사용, 인라인 style 금지.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "43c8bd83-c703-4ec7-9670-715891accb03"
+        },
+        {
+          "taskId": "b03c8e68-2112-4fb0-8a81-43bb72d7c77a"
+        }
+      ],
+      "createdAt": "2026-06-27T13:44:54.749Z",
+      "updatedAt": "2026-06-27T13:44:54.749Z",
+      "relatedFiles": [
+        {
+          "path": "src/components/quote/QuoteHeader.tsx",
+          "type": "CREATE",
+          "description": "발행자/견적번호/발행일/유효기간"
+        },
+        {
+          "path": "src/components/quote/QuoteClientCard.tsx",
+          "type": "CREATE",
+          "description": "수신자명/이메일"
+        },
+        {
+          "path": "src/components/quote/QuoteItemsTable.tsx",
+          "type": "CREATE",
+          "description": "데스크탑 Table / 모바일 카드"
+        },
+        {
+          "path": "src/components/quote/QuoteTotals.tsx",
+          "type": "CREATE",
+          "description": "소계/부가세/총액"
+        },
+        {
+          "path": "src/components/quote/QuoteMemo.tsx",
+          "type": "CREATE",
+          "description": "비고/메모(선택)"
+        },
+        {
+          "path": "src/components/quote/QuoteInlineWarning.tsx",
+          "type": "CREATE",
+          "description": "선택 필드 누락 경고"
+        }
+      ],
+      "implementationGuide": "1) shadcn 컴포넌트 활용: Card(header/client), Table+모바일 카드(items), Separator+강조(totals), Alert(warning)\n2) 시맨틱 토큰만 사용(bg-background/text-foreground/text-muted-foreground). 하드코딩 색상 금지.\n3) QuoteMemo: quote.memo가 undefined면 null 반환\n4) QuoteInlineWarning: 선택 필드 4개(email/contact/memo/currency) 누락 시 1건으로 묶어 표시\n5) /dev/quote-preview 임시 페이지에 더미 Quote 데이터로 통합 렌더링\n6) ui-markup-specialist 서브에이전트 위임 권장",
+      "verificationCriteria": "Playwright MCP 4-카테고리: (정상) /dev/quote-preview 6개 컴포넌트 렌더링. (실패) memo undefined fixture에서 QuoteMemo 미렌더. (엣지) browser_resize(320/768/1024)에서 자동 전환. (회귀) 항목 0건에서도 빈 상태 안내 + 선택 필드 4개 누락 시 경고 1건.",
+      "analysisResult": "invoice-web MVP는 Notion DB → /q/[slug] 웹 뷰 + 서버 PDF 다운로드를 제공하는 솔로 개발자용 서비스다. ROADMAP.md(5-Phase, 24-Task)의 단계별 순서·의존성·Playwright MCP 테스트 의무를 엄수한다. 본 등록은 Phase 1(Task 001 완료, Task 002·003 등록 완료) 이후 Phase 2~5의 21개 Task를 4-batch(append 모드)로 추가하며, dependencies는 ROADMAP \"의존성: Task XXX\" 줄과 기존 등록 Task name을 그대로 사용한다. 도메인 타입(Quote/QuoteLineItem)은 src/lib/notion/types.ts 단일 소스, 합계 서버 재계산, Pretendard 폰트 임베드, ISR 300초+메모리 캐시 10분, noindex/nofollow(/q/[slug]) 정책을 모든 Task가 공유한다."
+    },
+    {
+      "id": "ffd6132e-9d57-4309-a77e-290cdab61035",
+      "name": "Task 010: Pretendard 폰트 임베드 및 PDF 컴포넌트",
+      "description": "public/fonts/Pretendard-Regular.ttf, Pretendard-Bold.ttf 추가 + src/components/pdf/fonts.ts(Font.register) + src/components/pdf/quote-pdf.tsx(<QuotePdf quote={quote} />)를 구현한다. A4, 여백 40pt, 항목 50건 초과 시 자동 분할. formatCurrency 재사용.",
+      "notes": "ROADMAP Task 010. Playwright MCP 4-카테고리 필수. PDF 라이브러리 교체 금지(@react-pdf/renderer 고정).",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "43c8bd83-c703-4ec7-9670-715891accb03"
+        },
+        {
+          "taskId": "b03c8e68-2112-4fb0-8a81-43bb72d7c77a"
+        },
+        {
+          "taskId": "1389c4b8-ffb0-4c45-a118-4c6a5a9a3e5d"
+        }
+      ],
+      "createdAt": "2026-06-27T13:44:54.749Z",
+      "updatedAt": "2026-06-27T13:44:54.749Z",
+      "relatedFiles": [
+        {
+          "path": "public/fonts/Pretendard-Regular.ttf",
+          "type": "CREATE",
+          "description": "한글 폰트 Regular"
+        },
+        {
+          "path": "public/fonts/Pretendard-Bold.ttf",
+          "type": "CREATE",
+          "description": "한글 폰트 Bold"
+        },
+        {
+          "path": "src/components/pdf/fonts.ts",
+          "type": "CREATE",
+          "description": "Font.register"
+        },
+        {
+          "path": "src/components/pdf/quote-pdf.tsx",
+          "type": "CREATE",
+          "description": "<QuotePdf quote={quote} /> 트리"
+        }
+      ],
+      "implementationGuide": "1) public/fonts/Pretendard-*.ttf 추가(OFL)\n2) fonts.ts: Font.register({ family:'Pretendard', fonts:[{src,weight:400},{src,weight:700}] })\n3) quote-pdf.tsx: @react-pdf/renderer의 Document/Page/View/Text/StyleSheet. 페이지 사이즈 A4, padding 40pt. 헤더→클라이언트→항목 테이블→합계→메모 순\n4) 항목 50+ 시 자동 페이지 분할(react-pdf wrap 활용)\n5) formatCurrency 그대로 import",
+      "verificationCriteria": "Playwright MCP 4-카테고리: (정상) /dev/pdf-preview iframe 한글 정상 출력. (실패) 폰트 누락 시 Font.register 에러 로깅. (엣지) 항목 50/100건 페이지 자동 분할 + KRW/USD 포맷 정확. (회귀) 한영 혼합에서 □ 없이 정상 글리프.",
+      "analysisResult": "invoice-web MVP는 Notion DB → /q/[slug] 웹 뷰 + 서버 PDF 다운로드를 제공하는 솔로 개발자용 서비스다. ROADMAP.md(5-Phase, 24-Task)의 단계별 순서·의존성·Playwright MCP 테스트 의무를 엄수한다. 본 등록은 Phase 1(Task 001 완료, Task 002·003 등록 완료) 이후 Phase 2~5의 21개 Task를 4-batch(append 모드)로 추가하며, dependencies는 ROADMAP \"의존성: Task XXX\" 줄과 기존 등록 Task name을 그대로 사용한다. 도메인 타입(Quote/QuoteLineItem)은 src/lib/notion/types.ts 단일 소스, 합계 서버 재계산, Pretendard 폰트 임베드, ISR 300초+메모리 캐시 10분, noindex/nofollow(/q/[slug]) 정책을 모든 Task가 공유한다."
+    },
+    {
+      "id": "907bc869-8332-412f-862a-56a02e562dba",
+      "name": "Task 011: 견적서 페이지 Server Component 구현",
+      "description": "src/app/q/[slug]/page.tsx를 async Server Component로 구현한다. params는 Promise<{slug:string}>, getQuoteBySlug(slug) null이면 notFound(). generateMetadata에서 robots:{index:false,follow:false} 필수. 최상위 컨테이너 max-w-[880px] mx-auto. 6개 견적서 컴포넌트 조합 렌더링.",
+      "notes": "ROADMAP Task 011. Playwright MCP 4-카테고리 필수. nextjs-app-developer 서브에이전트 활용 권장.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "56925a1b-66b3-46bf-b47e-73bb9bf4fd74"
+        },
+        {
+          "taskId": "893a1b4a-8a68-4fd1-8c0e-db136ee499e0"
+        },
+        {
+          "taskId": "1389c4b8-ffb0-4c45-a118-4c6a5a9a3e5d"
+        }
+      ],
+      "createdAt": "2026-06-27T13:46:07.011Z",
+      "updatedAt": "2026-06-27T13:46:07.011Z",
+      "relatedFiles": [
+        {
+          "path": "src/app/q/[slug]/page.tsx",
+          "type": "TO_MODIFY",
+          "description": "placeholder를 실제 구현으로 교체"
+        },
+        {
+          "path": "src/lib/notion/quote.service.ts",
+          "type": "DEPENDENCY",
+          "description": "getQuoteBySlug"
+        },
+        {
+          "path": "src/components/quote/*",
+          "type": "DEPENDENCY",
+          "description": "6개 UI 컴포넌트"
+        }
+      ],
+      "implementationGuide": "1) export const revalidate = ISR_REVALIDATE_SECONDS (Task 008과 동기)\n2) export async function generateMetadata({params}) → { robots:{index:false,follow:false}, title:`${quote.quoteNumber} - ${quote.client.name}` }\n3) export default async function Page({params}: {params: Promise<{slug:string}>}) → const {slug} = await params; const quote = await getQuoteBySlug(slug); if(!quote) notFound();\n4) <Container max-w-[880px]>에 QuoteHeader/ClientCard/ItemsTable/Totals/Memo/InlineWarning 조합\n5) 필수 필드 누락은 Adapter throw → error.tsx 처리. 선택 필드 누락은 InlineWarning.",
+      "verificationCriteria": "Playwright MCP 4-카테고리: (정상) 유효 slug 5개 영역 렌더 + browser_evaluate로 meta robots=noindex,nofollow 확인. (실패) 존재하지 않는 slug → not-found.tsx. (엣지) 한글/특수문자 slug 정상 디코딩 + email 누락 시 인라인 경고 동시 노출. (회귀) 크롤러 UA로도 noindex 유지.",
+      "analysisResult": "Phase 3은 견적서 페이지(/q/[slug])와 PDF 다운로드(/api/q/[slug]/pdf)를 완성하여 사용자 여정(접속 → 견적서 확인 → PDF 저장)을 처음부터 끝까지 동작시킨다. Phase 2의 도메인 타입·Service·캐시·UI·PDF 컴포넌트를 모두 통합한다. /q/[slug]는 generateMetadata에서 noindex,nofollow 필수. PDF Route는 GET만, Content-Disposition은 RFC 5987 인코딩. 다운로드 버튼은 idle→loading→success→error 4-state. M3 마일스톤: 핵심 사용자 여정 동작."
+    },
+    {
+      "id": "7c5fc8c3-d404-46b8-9947-98c6ca46735b",
+      "name": "Task 012: 로딩 스켈레톤",
+      "description": "src/app/q/[slug]/loading.tsx에 shadcn Skeleton으로 헤더/항목 테이블/합계 영역을 실제 콘텐츠와 동일한 높이로 모사한다. CLS 0 보장.",
+      "notes": "ROADMAP Task 012. Playwright MCP 4-카테고리 필수.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "1389c4b8-ffb0-4c45-a118-4c6a5a9a3e5d"
+        }
+      ],
+      "createdAt": "2026-06-27T13:46:07.011Z",
+      "updatedAt": "2026-06-27T13:46:07.011Z",
+      "relatedFiles": [
+        {
+          "path": "src/app/q/[slug]/loading.tsx",
+          "type": "TO_MODIFY",
+          "description": "placeholder를 Skeleton으로 교체"
+        }
+      ],
+      "implementationGuide": "1) Next.js 규약: 같은 폴더 loading.tsx → Suspense fallback 자동 적용\n2) <Container max-w-[880px]>에 Skeleton 블록 배치: 헤더(h-24) + 클라이언트(h-16) + 테이블(h-12 행 5개) + 합계(h-20)\n3) 실제 컴포넌트와 동일 padding/margin → CLS 방지",
+      "verificationCriteria": "Playwright MCP 4-카테고리: (정상) Slow 3G throttling으로 스켈레톤 노출. (실패) 타임아웃 시 error.tsx 전이. (엣지) 캐시 적중 시 깜빡임 없이 콘텐츠 교체. (회귀) browser_evaluate LayoutShift=0.",
+      "analysisResult": "Phase 3은 견적서 페이지(/q/[slug])와 PDF 다운로드(/api/q/[slug]/pdf)를 완성하여 사용자 여정(접속 → 견적서 확인 → PDF 저장)을 처음부터 끝까지 동작시킨다. Phase 2의 도메인 타입·Service·캐시·UI·PDF 컴포넌트를 모두 통합한다. /q/[slug]는 generateMetadata에서 noindex,nofollow 필수. PDF Route는 GET만, Content-Disposition은 RFC 5987 인코딩. 다운로드 버튼은 idle→loading→success→error 4-state. M3 마일스톤: 핵심 사용자 여정 동작."
+    },
+    {
+      "id": "66326eb9-ddb8-49f0-b17a-7830bc5ad530",
+      "name": "Task 013: PDF Route 구현",
+      "description": "src/app/api/q/[slug]/pdf/route.ts에 GET 핸들러를 구현한다. renderToStream(<QuotePdf/>)으로 PDF 스트림 생성, Content-Type: application/pdf, Content-Disposition: attachment; filename*=UTF-8''<RFC5987 인코딩> 헤더. 파일명: 견적서_{client.name}_{issuedAt}.pdf.",
+      "notes": "ROADMAP Task 013. Playwright MCP 4-카테고리 필수.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "56925a1b-66b3-46bf-b47e-73bb9bf4fd74"
+        },
+        {
+          "taskId": "ffd6132e-9d57-4309-a77e-290cdab61035"
+        }
+      ],
+      "createdAt": "2026-06-27T13:46:07.011Z",
+      "updatedAt": "2026-06-27T13:46:07.011Z",
+      "relatedFiles": [
+        {
+          "path": "src/app/api/q/[slug]/pdf/route.ts",
+          "type": "TO_MODIFY",
+          "description": "placeholder를 GET 핸들러로 교체"
+        },
+        {
+          "path": "src/components/pdf/quote-pdf.tsx",
+          "type": "DEPENDENCY",
+          "description": "<QuotePdf/>"
+        }
+      ],
+      "implementationGuide": "1) import 'server-only'. POST/PUT/DELETE 추가 금지.\n2) export async function GET(_req, {params}: {params: Promise<{slug:string}>})\n3) const {slug} = await params; const quote = await getQuoteBySlug(slug); if(!quote) return new Response('Not Found', {status:404});\n4) const stream = await renderToStream(<QuotePdf quote={quote} />)\n5) headers: Content-Type 'application/pdf', Content-Disposition `attachment; filename*=UTF-8''${encodeURIComponent('견적서_'+quote.client.name+'_'+quote.issuedAt)}.pdf`\n6) try/catch → 실패 시 logger.error + 500",
+      "verificationCriteria": "Playwright MCP 4-카테고리: (정상) 200 + Content-Type application/pdf + RFC5987 한글 파일명. (실패) 존재하지 않는 slug 404 + Notion 실패 500 + pino 로그. (엣지) 항목 100건 5초 이내. (회귀) macOS/Windows에서 한글 파일명 깨짐 없음.",
+      "analysisResult": "Phase 3은 견적서 페이지(/q/[slug])와 PDF 다운로드(/api/q/[slug]/pdf)를 완성하여 사용자 여정(접속 → 견적서 확인 → PDF 저장)을 처음부터 끝까지 동작시킨다. Phase 2의 도메인 타입·Service·캐시·UI·PDF 컴포넌트를 모두 통합한다. /q/[slug]는 generateMetadata에서 noindex,nofollow 필수. PDF Route는 GET만, Content-Disposition은 RFC 5987 인코딩. 다운로드 버튼은 idle→loading→success→error 4-state. M3 마일스톤: 핵심 사용자 여정 동작."
+    },
+    {
+      "id": "e92fe2dd-9e37-4649-bbe6-df78b0c9d7a6",
+      "name": "Task 014: PDF 다운로드 버튼 컴포넌트",
+      "description": "src/components/quote/QuoteDownloadButton.tsx를 Client Component('use client')로 구현한다. 상태 머신 idle→loading→success(2초 후 idle)→error. URL.createObjectURL 후 페이지 언마운트 시 revokeObjectURL 의무. Sonner 토스트 에러 표시. SUCCESS_RESET_MS=2000 상수.",
+      "notes": "ROADMAP Task 014. Playwright MCP 4-카테고리 필수. SUCCESS_RESET_MS=2000.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "66326eb9-ddb8-49f0-b17a-7830bc5ad530"
+        }
+      ],
+      "createdAt": "2026-06-27T13:46:07.011Z",
+      "updatedAt": "2026-06-27T13:46:07.011Z",
+      "relatedFiles": [
+        {
+          "path": "src/components/quote/QuoteDownloadButton.tsx",
+          "type": "CREATE",
+          "description": "다운로드 버튼 + Sonner 통합"
+        },
+        {
+          "path": "src/app/q/[slug]/page.tsx",
+          "type": "TO_MODIFY",
+          "description": "버튼 mount 위치 추가"
+        }
+      ],
+      "implementationGuide": "1) 'use client'\n2) useState<'idle'|'loading'|'success'|'error'>('idle')\n3) handleClick: setLoading → fetch('/api/q/'+slug+'/pdf') → blob() → URL.createObjectURL → a.download 트리거 → setSuccess → setTimeout(setIdle, SUCCESS_RESET_MS)\n4) catch → setError + toast.error(원인 메시지)\n5) useEffect cleanup: URL.revokeObjectURL\n6) 4가지 상태별 아이콘(Download/Spinner/Check/AlertCircle) + aria-label 유지",
+      "verificationCriteria": "Playwright MCP 4-카테고리: (정상) loading→success 전환 + PDF 다운로드 완료. (실패) 500 시 error + Sonner 토스트. (엣지) 다운로드 중 페이지 이탈 → revokeObjectURL 호출, 메모리 누수 0. (회귀) success가 정확히 2000ms 후 idle 복귀.",
+      "analysisResult": "Phase 3은 견적서 페이지(/q/[slug])와 PDF 다운로드(/api/q/[slug]/pdf)를 완성하여 사용자 여정(접속 → 견적서 확인 → PDF 저장)을 처음부터 끝까지 동작시킨다. Phase 2의 도메인 타입·Service·캐시·UI·PDF 컴포넌트를 모두 통합한다. /q/[slug]는 generateMetadata에서 noindex,nofollow 필수. PDF Route는 GET만, Content-Disposition은 RFC 5987 인코딩. 다운로드 버튼은 idle→loading→success→error 4-state. M3 마일스톤: 핵심 사용자 여정 동작."
+    },
+    {
+      "id": "2908bbd4-da8e-4194-aac8-7b0660169c1a",
+      "name": "Task 015: 견적서 페이지 통합 테스트(Playwright MCP)",
+      "description": "tasks/015-quote-page-e2e.md의 ## 테스트 체크리스트에 4-카테고리 시나리오를 작성하고 통과시킨다. 핵심: subtotal/tax/total 수치 정합성, /q/non-existent → not-found, 5xx → error.tsx, 모바일 LCP < 2500ms, noindex,nofollow 응답 HTML 검증.",
+      "notes": "ROADMAP Task 015. Playwright MCP 4-카테고리 필수. 통합 E2E 검증.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "907bc869-8332-412f-862a-56a02e562dba"
+        },
+        {
+          "taskId": "7c5fc8c3-d404-46b8-9947-98c6ca46735b"
+        }
+      ],
+      "createdAt": "2026-06-27T13:46:07.011Z",
+      "updatedAt": "2026-06-27T13:46:07.011Z",
+      "relatedFiles": [
+        {
+          "path": "tasks/015-quote-page-e2e.md",
+          "type": "CREATE",
+          "description": "E2E 작업 명세 + 체크리스트"
+        }
+      ],
+      "implementationGuide": "1) tasks/015-quote-page-e2e.md 작성: 명세/관련 파일/수락 기준/구현 단계/테스트 체크리스트\n2) 시나리오: dev 서버 기동 → browser_navigate('/q/{slug}') → browser_snapshot 5영역 → browser_evaluate로 subtotal 검증 → /q/non-existent → not-found 캡처 → Notion 5xx 모의 → error 캡처 → browser_resize(375,667) + PerformanceObserver LCP → browser_network_requests 응답 HTML에서 noindex,nofollow 문자열 확인\n3) 통과 시 ROADMAP Task 015 체크박스 갱신",
+      "verificationCriteria": "Playwright MCP 4-카테고리 모두 통과: 정상(수치 정합성) / 실패(not-found + error.tsx) / 엣지(LCP < 2500ms 모바일) / 회귀(응답 HTML noindex 포함).",
+      "analysisResult": "Phase 3은 견적서 페이지(/q/[slug])와 PDF 다운로드(/api/q/[slug]/pdf)를 완성하여 사용자 여정(접속 → 견적서 확인 → PDF 저장)을 처음부터 끝까지 동작시킨다. Phase 2의 도메인 타입·Service·캐시·UI·PDF 컴포넌트를 모두 통합한다. /q/[slug]는 generateMetadata에서 noindex,nofollow 필수. PDF Route는 GET만, Content-Disposition은 RFC 5987 인코딩. 다운로드 버튼은 idle→loading→success→error 4-state. M3 마일스톤: 핵심 사용자 여정 동작."
+    },
+    {
+      "id": "10e112c4-8609-4312-b5b4-2ed12c234bd1",
+      "name": "Task 016: PDF 다운로드 E2E 테스트(Playwright MCP)",
+      "description": "tasks/016-pdf-download-e2e.md의 ## 테스트 체크리스트에 4-카테고리 시나리오를 작성·통과시킨다. 핵심: 파일명 패턴(견적서_{client.name}_{issuedAt}.pdf), 잘못된 slug Sonner 에러, 응답 < 5초 P95, KRW/USD PDF 통화 기호 정확.",
+      "notes": "ROADMAP Task 016. Playwright MCP 4-카테고리 필수. 회귀: 통화 포맷 버그 재발 방지.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "e92fe2dd-9e37-4649-bbe6-df78b0c9d7a6"
+        }
+      ],
+      "createdAt": "2026-06-27T13:46:07.011Z",
+      "updatedAt": "2026-06-27T13:46:07.011Z",
+      "relatedFiles": [
+        {
+          "path": "tasks/016-pdf-download-e2e.md",
+          "type": "CREATE",
+          "description": "PDF E2E 작업 명세 + 체크리스트"
+        }
+      ],
+      "implementationGuide": "1) tasks/016-pdf-download-e2e.md 작성\n2) 시나리오: browser_navigate('/q/{slug}') → browser_click 다운로드 → browser_snapshot loading → 파일 저장 및 파일명 검증 → 잘못된 slug에서 Sonner 캡처 → browser_network_requests timing.duration 10회 기록(P95 추적) → KRW/USD fixture 각각 다운로드 후 PDF 텍스트 추출(Node pdf-parse 등 별도)로 통화 기호 검증\n3) 통과 시 ROADMAP Task 016 체크박스 갱신",
+      "verificationCriteria": "Playwright MCP 4-카테고리 모두 통과: 정상(파일명 패턴) / 실패(Sonner 에러) / 엣지(응답 < 5초 P95 10회 측정) / 회귀(KRW/USD 통화 기호 정확).",
+      "analysisResult": "Phase 3은 견적서 페이지(/q/[slug])와 PDF 다운로드(/api/q/[slug]/pdf)를 완성하여 사용자 여정(접속 → 견적서 확인 → PDF 저장)을 처음부터 끝까지 동작시킨다. Phase 2의 도메인 타입·Service·캐시·UI·PDF 컴포넌트를 모두 통합한다. /q/[slug]는 generateMetadata에서 noindex,nofollow 필수. PDF Route는 GET만, Content-Disposition은 RFC 5987 인코딩. 다운로드 버튼은 idle→loading→success→error 4-state. M3 마일스톤: 핵심 사용자 여정 동작."
+    },
+    {
+      "id": "82235c88-6693-4fc1-b830-ecc9aceaf1a3",
+      "name": "Task 017: 404 페이지",
+      "description": "src/app/q/[slug]/not-found.tsx에 '이 견적서를 찾을 수 없습니다' 안내 + 홈으로 돌아가기 버튼을 구현한다. Notion 페이지 삭제/권한 회수도 동일 화면(410 흡수).",
+      "notes": "ROADMAP Task 017. Playwright MCP 4-카테고리 필수.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "907bc869-8332-412f-862a-56a02e562dba"
+        }
+      ],
+      "createdAt": "2026-06-27T13:47:47.999Z",
+      "updatedAt": "2026-06-27T13:47:47.999Z",
+      "relatedFiles": [
+        {
+          "path": "src/app/q/[slug]/not-found.tsx",
+          "type": "TO_MODIFY",
+          "description": "placeholder를 안내 UI로 교체"
+        }
+      ],
+      "implementationGuide": "1) Server Component 가능. '이 견적서를 찾을 수 없습니다' h1 + 안내 문구\n2) 발행자에게 URL 재확인 요청 문구\n3) Link to / 버튼(shadcn Button, aria-label='홈으로 돌아가기')\n4) generateMetadata로 noindex,nofollow 명시",
+      "verificationCriteria": "Playwright MCP 4-카테고리: (정상) /q/non-existent 404 화면 + 홈 버튼 동작. (실패) Notion 삭제 케이스 동일 화면. (엣지) 빈 문자열/255자 slug 안정 표시. (회귀) browser_evaluate로 noindex,nofollow 메타 유지.",
+      "analysisResult": "Phase 4는 핵심 기능 보호를 위한 에러·예외 처리(F010), 발행자 셀프 온보딩(F011), SEO 메타데이터, WCAG AA 접근성을 완성한다. M4 마일스톤: 흰 화면 없는 UX + 셀프 온보딩 완료. 홈은 index,follow + OG 이미지, /q/[slug]는 noindex,nofollow 유지. error.tsx는 NotionApiError/QuoteFieldMissingError/기타 3분기. Lighthouse a11y 90+."
+    },
+    {
+      "id": "b0d24b7f-fc17-404e-91dd-5b3b62332360",
+      "name": "Task 018: 에러 페이지",
+      "description": "src/app/q/[slug]/error.tsx를 Client Component('use client')로 구현한다. error.name 기반 분기: NotionApiError → 'Notion 서비스에 일시적인 문제가 있습니다', QuoteFieldMissingError → '견적서 정보가 불완전합니다' + 누락 필드 목록, 그 외 → '잠시 후 다시 시도해 주세요'. 다시 시도(reset) + 홈 버튼.",
+      "notes": "ROADMAP Task 018. Playwright MCP 4-카테고리 필수. console.* 금지 유지 방안 결정 필요.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "6a220b14-e11a-43c4-b285-986e852ffc2e"
+        },
+        {
+          "taskId": "56925a1b-66b3-46bf-b47e-73bb9bf4fd74"
+        }
+      ],
+      "createdAt": "2026-06-27T13:47:47.999Z",
+      "updatedAt": "2026-06-27T13:47:47.999Z",
+      "relatedFiles": [
+        {
+          "path": "src/app/q/[slug]/error.tsx",
+          "type": "TO_MODIFY",
+          "description": "placeholder를 분기 UI로 교체"
+        },
+        {
+          "path": "src/lib/notion/errors.ts",
+          "type": "DEPENDENCY",
+          "description": "에러 클래스 name"
+        }
+      ],
+      "implementationGuide": "1) 'use client' 강제(Next.js error.tsx 규약)\n2) export default function Error({error, reset}: {error: Error & {missingFields?: string[]}, reset: () => void})\n3) switch(error.name): 'NotionApiError' / 'QuoteFieldMissingError'(누락 필드 ul 렌더) / default\n4) <Button onClick={reset}>다시 시도</Button> + <Link to='/'>홈으로 돌아가기</Link>\n5) useEffect로 logger.error 호출(클라이언트→/api 로깅 경로 별도 또는 console 금지 유지 위해 server action)",
+      "verificationCriteria": "Playwright MCP 4-카테고리: (정상) 잘못된 NOTION_TOKEN → NotionApiError 안내. (실패) QuoteFieldMissingError 누락 필드 목록 표시 + reset 동작. (엣지) 기타 에러 기본 문구. (회귀) 홈 버튼 후 잔여 에러 상태 없음.",
+      "analysisResult": "Phase 4는 핵심 기능 보호를 위한 에러·예외 처리(F010), 발행자 셀프 온보딩(F011), SEO 메타데이터, WCAG AA 접근성을 완성한다. M4 마일스톤: 흰 화면 없는 UX + 셀프 온보딩 완료. 홈은 index,follow + OG 이미지, /q/[slug]는 noindex,nofollow 유지. error.tsx는 NotionApiError/QuoteFieldMissingError/기타 3분기. Lighthouse a11y 90+."
+    },
+    {
+      "id": "f5f44db2-2055-4b88-a63f-75dccfd467d6",
+      "name": "Task 019: 홈 페이지 UI 구현",
+      "description": "src/app/page.tsx를 랜딩 페이지로 교체하고, src/components/home/ 에 Hero, Features, NotionSetupGuide, DbSchemaTable 4개 섹션을 구현한다. h1 1개, 시맨틱 마크업, 외부 가이드 링크(target=_blank, rel=noopener noreferrer).",
+      "notes": "ROADMAP Task 019. Playwright MCP 4-카테고리 필수.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "a07cab03-b4bf-4fff-b16a-ecc79f91cb46"
+        }
+      ],
+      "createdAt": "2026-06-27T13:47:47.999Z",
+      "updatedAt": "2026-06-27T13:47:47.999Z",
+      "relatedFiles": [
+        {
+          "path": "src/app/page.tsx",
+          "type": "TO_MODIFY",
+          "description": "placeholder를 4 섹션 조합으로 교체"
+        },
+        {
+          "path": "src/components/home/Hero.tsx",
+          "type": "CREATE",
+          "description": "Hero 섹션"
+        },
+        {
+          "path": "src/components/home/Features.tsx",
+          "type": "CREATE",
+          "description": "특장점 3-카드"
+        },
+        {
+          "path": "src/components/home/NotionSetupGuide.tsx",
+          "type": "CREATE",
+          "description": "Integration 1~5단계"
+        },
+        {
+          "path": "src/components/home/DbSchemaTable.tsx",
+          "type": "CREATE",
+          "description": "DB 스키마 표"
+        }
+      ],
+      "implementationGuide": "1) Hero.tsx: h1 + 서비스 한 줄 설명 + 특장점 3가지(Notion 연동/반응형 웹뷰/PDF 다운로드)\n2) Features.tsx: Lucide 아이콘 + 3-카드 그리드\n3) NotionSetupGuide.tsx: 1~5단계 안내(아이콘/번호)\n4) DbSchemaTable.tsx: shadcn Table로 PRD 데이터 모델 표 시각화\n5) 공유 URL 예시 + 외부 가이드 링크 버튼\n6) src/app/page.tsx에서 4 섹션 조합. ui-markup-specialist 위임 권장.",
+      "verificationCriteria": "Playwright MCP 4-카테고리: (정상) 4 섹션 렌더링. (실패) 외부 링크 새 탭 + rel=noopener noreferrer. (엣지) 3종 뷰포트 가독성. (회귀) h1 정확히 1개.",
+      "analysisResult": "Phase 4는 핵심 기능 보호를 위한 에러·예외 처리(F010), 발행자 셀프 온보딩(F011), SEO 메타데이터, WCAG AA 접근성을 완성한다. M4 마일스톤: 흰 화면 없는 UX + 셀프 온보딩 완료. 홈은 index,follow + OG 이미지, /q/[slug]는 noindex,nofollow 유지. error.tsx는 NotionApiError/QuoteFieldMissingError/기타 3분기. Lighthouse a11y 90+."
+    },
+    {
+      "id": "d127661e-7d63-46be-a806-83eab6204cc0",
+      "name": "Task 020: 홈 SEO 메타데이터·OG 태그 및 /q/[slug] noindex 재확인",
+      "description": "src/app/layout.tsx 또는 src/app/page.tsx의 metadata에 title/description/openGraph/twitter 메타를 정의하고, public/og-image.png(1200×630)를 추가한다. 홈은 robots:{index:true,follow:true}, /q/[slug]는 noindex,nofollow 회귀 재검증.",
+      "notes": "ROADMAP Task 020. 비고: 메타데이터·정적 자산 Task로 4-카테고리 면제(최소 시각 검증만).",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "907bc869-8332-412f-862a-56a02e562dba"
+        },
+        {
+          "taskId": "f5f44db2-2055-4b88-a63f-75dccfd467d6"
+        }
+      ],
+      "createdAt": "2026-06-27T13:47:47.999Z",
+      "updatedAt": "2026-06-27T13:47:47.999Z",
+      "relatedFiles": [
+        {
+          "path": "src/app/page.tsx",
+          "type": "TO_MODIFY",
+          "description": "metadata 추가"
+        },
+        {
+          "path": "src/app/layout.tsx",
+          "type": "TO_MODIFY",
+          "description": "openGraph/twitter 기본값"
+        },
+        {
+          "path": "public/og-image.png",
+          "type": "CREATE",
+          "description": "1200×630 OG 이미지"
+        }
+      ],
+      "implementationGuide": "1) export const metadata: Metadata = { title, description, openGraph:{title,description,images:['/og-image.png'],type:'website'}, twitter:{card:'summary_large_image'}, robots:{index:true,follow:true} }\n2) public/og-image.png 1200×630 추가(디자인 별도 또는 placeholder)\n3) /q/[slug]/page.tsx generateMetadata 재확인",
+      "verificationCriteria": "최소 시각 검증: browser_navigate('/') → browser_evaluate로 og:image content='/og-image.png' 및 robots=index,follow 확인. /q/{slug}에서 noindex,nofollow 유지 재검증.",
+      "analysisResult": "Phase 4는 핵심 기능 보호를 위한 에러·예외 처리(F010), 발행자 셀프 온보딩(F011), SEO 메타데이터, WCAG AA 접근성을 완성한다. M4 마일스톤: 흰 화면 없는 UX + 셀프 온보딩 완료. 홈은 index,follow + OG 이미지, /q/[slug]는 noindex,nofollow 유지. error.tsx는 NotionApiError/QuoteFieldMissingError/기타 3분기. Lighthouse a11y 90+."
+    },
+    {
+      "id": "865eab7f-f727-46b3-a24e-bd0375f99d5e",
+      "name": "Task 021: 접근성 감사(WCAG AA)",
+      "description": "홈/견적서/404/에러 4개 페이지에서 Lighthouse Accessibility 90+ 달성. 모든 버튼·인터랙티브 요소에 aria-label, 색상 대비 4.5:1+, 키보드 내비게이션, 폼·테이블 라벨·헤더 점검.",
+      "notes": "ROADMAP Task 021. 비고: 감사·점수 측정 Task로 4-카테고리 면제(Lighthouse + 키보드 시각 검증으로 갈음).",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "2908bbd4-da8e-4194-aac8-7b0660169c1a"
+        },
+        {
+          "taskId": "82235c88-6693-4fc1-b830-ecc9aceaf1a3"
+        },
+        {
+          "taskId": "b0d24b7f-fc17-404e-91dd-5b3b62332360"
+        },
+        {
+          "taskId": "f5f44db2-2055-4b88-a63f-75dccfd467d6"
+        }
+      ],
+      "createdAt": "2026-06-27T13:47:47.999Z",
+      "updatedAt": "2026-06-27T13:47:47.999Z",
+      "relatedFiles": [
+        {
+          "path": "tasks/021-a11y-audit.md",
+          "type": "CREATE",
+          "description": "접근성 체크리스트 + 측정 결과"
+        }
+      ],
+      "implementationGuide": "1) 4개 페이지에서 Lighthouse a11y 측정(Chrome DevTools 또는 browser_evaluate + lighthouse 노드)\n2) aria-label/aria-labelledby 누락 보강\n3) 색상 대비 측정 후 시맨틱 토큰 조정\n4) browser_press_key('Tab') 반복으로 포커스 순회 시각 검증\n5) 결과 점수와 개선 내역을 작업 파일에 기록",
+      "verificationCriteria": "4개 페이지 Lighthouse Accessibility 90+ 기록. browser_press_key('Tab') 반복 포커스 순회가 의미 있는 순서임을 browser_snapshot으로 확인.",
+      "analysisResult": "Phase 4는 핵심 기능 보호를 위한 에러·예외 처리(F010), 발행자 셀프 온보딩(F011), SEO 메타데이터, WCAG AA 접근성을 완성한다. M4 마일스톤: 흰 화면 없는 UX + 셀프 온보딩 완료. 홈은 index,follow + OG 이미지, /q/[slug]는 noindex,nofollow 유지. error.tsx는 NotionApiError/QuoteFieldMissingError/기타 3분기. Lighthouse a11y 90+."
+    },
+    {
+      "id": "f9d9e64d-6afe-4ee4-b84d-b5ddd35ba7aa",
+      "name": "Task 022: 성능 최적화(LCP < 2.5s, PDF < 5s P95)",
+      "description": "견적서 페이지 Lighthouse Performance 90+, PDF 평균 < 3초·P95 < 5초 달성. next/font Pretendard 적용, next/image 확인, ISR revalidate=300 동작 확인, PDF Route 응답시간 10회 측정, Bundle Analyzer로 불필요 의존성 제거. 반응형 3종 뷰포트 검증.",
+      "notes": "ROADMAP Task 022. 비고: 성능 측정 Task로 4-카테고리 면제(Lighthouse + Performance API + 반응형 측정으로 갈음).",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "2908bbd4-da8e-4194-aac8-7b0660169c1a"
+        },
+        {
+          "taskId": "10e112c4-8609-4312-b5b4-2ed12c234bd1"
+        }
+      ],
+      "createdAt": "2026-06-27T13:50:07.447Z",
+      "updatedAt": "2026-06-27T13:50:07.447Z",
+      "relatedFiles": [
+        {
+          "path": "tasks/022-performance.md",
+          "type": "CREATE",
+          "description": "성능 측정 리포트"
+        },
+        {
+          "path": "src/app/layout.tsx",
+          "type": "TO_MODIFY",
+          "description": "next/font Pretendard 등록(필요 시)"
+        }
+      ],
+      "implementationGuide": "1) Pretendard 웹폰트를 next/font/local로 등록(FOIT 방지)\n2) next/image 적용 가능 영역 확인 및 적용\n3) ISR 캐시 적중 로그 확인(Task 008 회귀)\n4) PDF Route 10회 호출 → browser_network_requests timing.duration 기록 → 평균/P95 산출\n5) @next/bundle-analyzer 일회성 실행 → 불필요 의존성 식별 → 제거\n6) browser_resize(320/768/1024)에서 레이아웃 검증",
+      "verificationCriteria": "견적서 페이지 Lighthouse Performance 90+. browser_evaluate로 LCP < 2500ms. PDF Route 10회 측정 평균 < 3초·P95 < 5초 기록. 3종 뷰포트 레이아웃 깨짐 없음.",
+      "analysisResult": "Phase 5는 성능 기준(LCP < 2.5s, PDF 생성 < 5s P95)을 달성하고 Vercel 프로덕션 배포 후 사용자 여정 1~5단계 전체를 회귀 검증한다. M5 마일스톤: 프로덕션 출시. Pretendard 웹폰트 next/font 최적화(FOIT 방지), next/image, ISR 동작, Bundle Analyzer로 불필요 의존성 제거. 환경변수: NOTION_TOKEN, NOTION_QUOTE_DB_ID, (선택) NOTION_ITEM_DB_ID. 커스텀 도메인 연결."
+    },
+    {
+      "id": "58a45e04-db98-4db1-b5e6-c0de1491c9b7",
+      "name": "Task 023: Vercel 배포 및 환경변수 설정",
+      "description": "Vercel 프로젝트 연결, 환경변수(NOTION_TOKEN, NOTION_QUOTE_DB_ID, 선택 NOTION_ITEM_DB_ID) 등록, 커스텀 도메인 연결. 프로덕션 URL에서 홈/견적서/PDF 다운로드 정상 동작, Vercel Logs에서 pino 로그 확인.",
+      "notes": "ROADMAP Task 023. 비고: 인프라 설정 Task로 4-카테고리 면제(Task 024에서 통합 검증).",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "f9d9e64d-6afe-4ee4-b84d-b5ddd35ba7aa"
+        }
+      ],
+      "createdAt": "2026-06-27T13:50:07.447Z",
+      "updatedAt": "2026-06-27T13:50:07.447Z",
+      "relatedFiles": [
+        {
+          "path": "tasks/023-vercel-deploy.md",
+          "type": "CREATE",
+          "description": "배포 절차 + 환경변수 체크리스트"
+        }
+      ],
+      "implementationGuide": "1) vercel link 또는 GitHub 연동\n2) Vercel Dashboard → Environment Variables → Production/Preview/Development 각각 등록\n3) 커스텀 도메인 추가(예: invoice-web.app) + DNS 설정\n4) Production 배포 트리거 → 빌드 통과 확인\n5) 프로덕션 URL 첫 진입 시 홈 페이지 정상 렌더링\n6) Vercel Logs에서 pino 구조화 로그 출력 확인",
+      "verificationCriteria": "프로덕션 URL 빌드 성공. browser_navigate로 홈 페이지 정상 렌더링 + browser_snapshot 1회. Vercel Logs pino 로그 확인.",
+      "analysisResult": "Phase 5는 성능 기준(LCP < 2.5s, PDF 생성 < 5s P95)을 달성하고 Vercel 프로덕션 배포 후 사용자 여정 1~5단계 전체를 회귀 검증한다. M5 마일스톤: 프로덕션 출시. Pretendard 웹폰트 next/font 최적화(FOIT 방지), next/image, ISR 동작, Bundle Analyzer로 불필요 의존성 제거. 환경변수: NOTION_TOKEN, NOTION_QUOTE_DB_ID, (선택) NOTION_ITEM_DB_ID. 커스텀 도메인 연결."
+    },
+    {
+      "id": "9b114eeb-3c51-4cb3-9419-08f6d32e2363",
+      "name": "Task 024: 전체 사용자 플로우 E2E 회귀 테스트(Playwright MCP)",
+      "description": "tasks/024-full-flow-e2e.md에 사용자 여정 1~5단계 4-카테고리 시나리오를 작성·통과시킨다. 프로덕션 환경에서 홈→견적서→PDF 다운로드 전체 플로우 + M1~M5 모든 회귀(noindex/캐시/한글 파일명/인라인 경고) 검증.",
+      "notes": "ROADMAP Task 024. Playwright MCP 4-카테고리 필수. 프로덕션 환경에서 수행. MVP 출시 게이트.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "58a45e04-db98-4db1-b5e6-c0de1491c9b7"
+        }
+      ],
+      "createdAt": "2026-06-27T13:50:07.447Z",
+      "updatedAt": "2026-06-27T13:50:07.447Z",
+      "relatedFiles": [
+        {
+          "path": "tasks/024-full-flow-e2e.md",
+          "type": "CREATE",
+          "description": "프로덕션 E2E 회귀 명세 + 체크리스트"
+        }
+      ],
+      "implementationGuide": "1) tasks/024-full-flow-e2e.md 작성\n2) 정상: 프로덕션 URL에서 / → 가이드 → /q/{실제-slug} → PDF 다운로드 browser_network_requests 검증\n3) 실패: 존재하지 않는 slug → not-found + 홈 이동, 잘못된 토큰 모의 → error.tsx + 다시 시도\n4) 엣지: browser_resize(375,667) 모바일 전체 플로우 재실행, KRW/USD 두 통화 PDF 다운로드\n5) 회귀: M1~M5 시나리오(noindex/캐시 적중/한글 파일명/인라인 경고)를 한 번씩 재실행, browser_snapshot+browser_console_messages 기록\n6) 결과 통과 시 ROADMAP Phase 5 완료 기준 체크박스 갱신",
+      "verificationCriteria": "Playwright MCP 4-카테고리 모두 프로덕션에서 통과: 정상(홈→견적서→PDF) / 실패(not-found+error reset) / 엣지(모바일 전체 + KRW/USD) / 회귀(M1~M5 시나리오 재실행). ROADMAP 진행 현황 24/24 완료.",
+      "analysisResult": "Phase 5는 성능 기준(LCP < 2.5s, PDF 생성 < 5s P95)을 달성하고 Vercel 프로덕션 배포 후 사용자 여정 1~5단계 전체를 회귀 검증한다. M5 마일스톤: 프로덕션 출시. Pretendard 웹폰트 next/font 최적화(FOIT 방지), next/image, ISR 동작, Bundle Analyzer로 불필요 의존성 제거. 환경변수: NOTION_TOKEN, NOTION_QUOTE_DB_ID, (선택) NOTION_ITEM_DB_ID. 커스텀 도메인 연결."
     }
   ]
 }
